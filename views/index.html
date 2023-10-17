@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Social Media</title>
+    <style>
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5dc; /* Beige color */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.container {
+    max-width: 400px;
+    background-color: #fff; /* White background */
+    padding: 100px;
+    border-radius: 10px; /* Rounded corners for a 3D effect */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box shadow for depth */
+    text-align: center;
+}
+
+h1 {
+    color: #333;
+}
+
+form {
+    margin-top: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 15px;
+}
+
+button {
+    background-color: #4caf50; /* Green color */
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Smooth transition */
+}
+
+button:hover {
+    background-color: #45a049; /* Darker green on hover */
+}
+.post {
+    background-color: #fff; /* White background for each post */
+    border-radius: 10px; /* Rounded corners for a 3D effect */
+    margin-bottom: 20px; /* Spacing between posts */
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box shadow for depth */
+}
+
+.post img {
+    width: 20px; /* Fixed width */
+    height: 20px; /* Fixed height */
+    object-fit: cover; /* Ensure the image covers the entire container */
+    display: block;
+    border-radius: 10px 10px 0 0; /* Rounded corners for the top of the image */
+    margin-bottom: 10px; /* Add margin to separate the image from the post content */
+    margin-top: 10px; /* Add margin to separate the image from the container */
+}
+
+.post-content {
+    padding: 40px;
+    margin-top: 10px; /* Add margin to separate the content from the container */
+    background-color: #fff; /* White background for each post */
+    border-radius: 10px; /* Rounded corners for a 3D effect */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Box shadow for depth */
+}
+
+.post-content p {
+    margin-bottom: 15px;
+}
+
+.post-content button {
+    background-color: #3498db; /* Blue color for the button */
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Smooth transition */
+}
+
+.post-content button:hover {
+    background-color: #2980b9; /* Darker blue on hover */
+}
+
+.comments {
+    margin-top: 20px; /* Spacing between comments and post content */
+}
+
+.commentForm {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.commentInput {
+    flex: 1;
+    padding: 8px;
+}
+
+.commentForm button {
+    background-color: #4caf50; /* Green color for the comment button */
+    color: #fff;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    margin-left: 10px; /* Spacing between input and button */
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Smooth transition */
+}
+
+.commentForm button:hover {
+    background-color: #45a049; /* Darker green on hover */
+}
+
+  
+    </style>
+</head>
+<body>
+    <div class="container">
+    <h1>Social Media</h1>
+    <form id="postForm">
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description" required><br>
+        <label for="imageUrl">Image URL:</label>
+        <input type="text" id="imageUrl" name="imageUrl" required><br>
+        <button type="submit">Upload</button>
+    </form>
+    </div>
+    <div id="posts"></div>
+
+    <script>
+        const postForm = document.getElementById('postForm');
+        const postsContainer = document.getElementById('posts');
+    
+        async function fetchPosts() {
+            try {
+                const response = await fetch('/api/posts');
+                const posts = await response.json();
+                posts.forEach(post => {
+                    displayPost(post);
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    
+        function displayPost(post) {
+            const postElement = document.createElement('div');
+            postElement.innerHTML = `
+                <img src="${post.imageUrl}" alt="${post.description}">
+                <p>${post.description}</p>
+                <form class="commentForm">
+                    <input type="text" class="commentInput" required>
+                    <button type="submit">Comment</button>
+                </form>
+                <div class="comments" data-post-id="${post.id}"></div>
+                <button class="deletePost" data-post-id="${post.id}">Delete Post</button>
+            `;
+            postsContainer.appendChild(postElement);
+    
+            const commentForm = postElement.querySelector('.commentForm');
+            const commentsContainer = postElement.querySelector('.comments');
+            const commentInput = postElement.querySelector('.commentInput');
+            const deleteButton = postElement.querySelector('.deletePost');
+    
+            commentForm.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                const commentText = commentInput.value;
+    
+                try {
+                    const response = await fetch('/api/comments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ text: commentText, postId: post.id })
+                    });
+                    const data = await response.json();
+                    displayComment(data, commentsContainer);
+                    commentInput.value = '';
+                } catch (error) {
+                    console.error(error);
+                }
+            });
+    
+            deleteButton.addEventListener('click', async function () {
+                try {
+                    const response = await fetch(`/api/posts/${post.id}`, {
+                        method: 'DELETE',
+                    });
+    
+                    if (response.ok) {
+                        // Remove the post from the DOM
+                        postElement.remove();
+                    } else {
+                        console.error('Failed to delete post');
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            });
+    
+            fetchComments(post.id, commentsContainer);
+        }
+    
+        async function fetchComments(postId, container) {
+            try {
+                const response = await fetch(`/api/comments/${postId}`);
+                const comments = await response.json();
+                comments.forEach(comment => {
+                    displayComment(comment, container);
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    
+        function displayComment(comment, container) {
+            const commentElement = document.createElement('div');
+            commentElement.textContent = comment.text;
+            container.appendChild(commentElement);
+        }
+    
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPosts();
+        });
+    
+        postForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const description = document.getElementById('description').value;
+            const imageUrl = document.getElementById('imageUrl').value;
+    
+            try {
+                const response = await fetch('/api/posts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ description, imageUrl })
+                });
+                const data = await response.json();
+                displayPost(data);
+                postForm.reset();
+            } catch (error) {
+                console.error(error);
+            }
+        });
+    </script>
+    
+    
+</body>
+</html>
